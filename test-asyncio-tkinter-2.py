@@ -12,7 +12,8 @@ import threading
 import tkinter as tk
 from tkinter import messagebox
 
-    
+# -------------------------------------------------------------------------
+
 async def asyncioTask(url: int):
     '''
     An Async I/O Task.
@@ -21,6 +22,7 @@ async def asyncioTask(url: int):
     await asyncio.sleep(sec)
     return 'url: {}\tsec: {}'.format(url, sec)
 
+# -------------------------------------------------------------------------
 
 async def asyncioTasks():
     '''
@@ -31,6 +33,7 @@ async def asyncioTasks():
     results = [task.result() for task in completed]
     print('\n'.join(results))
 
+# -------------------------------------------------------------------------
 
 def asyncioMain():
     '''
@@ -38,10 +41,12 @@ def asyncioMain():
     '''
     asyncio.run(asyncioTasks())
 
+# -------------------------------------------------------------------------
 
 def guiTasks(n: int):
     messagebox.showinfo(message=f'Performing Task {n}')
 
+# -------------------------------------------------------------------------
 
 def guiMain():
     root = tk.Tk()
@@ -53,21 +58,21 @@ def guiMain():
     tk.Button(master=body, text='Exit', command=root.destroy).pack(anchor=tk.N, fill=tk.X, pady=(5, 0))
     root.mainloop()
 
+# -------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
     guit = threading.Thread(
         target = guiMain,
-        name = 'GUI',
+        name   = 'GUI',
     )
 
     aiot = threading.Thread(
-        target= asyncioMain,
-        name = 'Async I/O',
+        target = asyncioMain,
+        name   = 'Async I/O',
     )
 
     guit.start()
-
     aiot.start()
 
     aiot.join()
