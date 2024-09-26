@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 '''
-This program demonstrates mixing asyncio and tkinter.
+This program demonstrates the mixing of asyncio and tkinter.
 '''
 
 import asyncio
@@ -14,13 +14,13 @@ from tkinter import messagebox
 
 # -------------------------------------------------------------------------
 
-async def asyncioTask(url: int):
+async def asyncioTask(n: int):
     '''
     An Async I/O Task.
     '''
     sec = random.randint(1, 8)
     await asyncio.sleep(sec)
-    return 'url: {}\tsec: {}'.format(url, sec)
+    return 'Task: {}\tsec: {}'.format(n, sec)
 
 # -------------------------------------------------------------------------
 
@@ -49,13 +49,20 @@ def guiTasks(n: int):
 # -------------------------------------------------------------------------
 
 def guiMain():
+
     root = tk.Tk()
+    root.title('asyncio-tkinter')
+    root.resizable(False, False)
+
     body = tk.Frame(master=root)
     body.pack(anchor=tk.CENTER, fill=tk.BOTH, padx=10, pady=10)
+
     tk.Button(master=body, text='Task 1', command=lambda: guiTasks(1)).pack(anchor=tk.N, fill=tk.X, pady=(0, 5))
     tk.Button(master=body, text='Task 2', command=lambda: guiTasks(2)).pack(anchor=tk.N, fill=tk.X, pady=(0, 5))
     tk.Button(master=body, text='Task 3', command=lambda: guiTasks(3)).pack(anchor=tk.N, fill=tk.X, pady=(0, 5))
+
     tk.Button(master=body, text='Exit', command=root.destroy).pack(anchor=tk.N, fill=tk.X, pady=(5, 0))
+    
     root.mainloop()
 
 # -------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 '''
-This program demonstrates mixing asyncio and tkinter.
+This program demonstrates the mixing of asyncio and tkinter.
 '''
 
 import asyncio
@@ -17,13 +17,13 @@ event = threading.Event()
 
 # -------------------------------------------------------------------------
 
-async def asyncioTask(url: int):
+async def asyncioTask(n: int):
     '''
     An Async I/O Task.
     '''
     sec = random.randint(1, 8)
     await asyncio.sleep(sec)
-    return 'url: {}\tsec: {}'.format(url, sec)
+    return 'Task: {}\tsec: {}'.format(n, sec)
 
 # -------------------------------------------------------------------------
 
@@ -63,6 +63,8 @@ def guiTasks(n: int):
 def guiMain():
 
     root = tk.Tk()
+    root.title('asyncio-tkinter')
+    root.resizable(False, False)
 
     body = tk.Frame(master=root)
     body.pack(anchor=tk.CENTER, fill=tk.BOTH, padx=10, pady=10)

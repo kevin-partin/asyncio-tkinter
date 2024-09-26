@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 
 '''
-This program demonstrates mixing asyncio and tkinter.
+This program demonstrates the mixing of asyncio and tkinter.
 '''
 
 import tkinter as tk
@@ -40,9 +40,17 @@ def do_other_tasks():
 
 
 def main(async_loop):
+
     root = tk.Tk()
-    tk.Button(master=root, text='Asyncio Tasks', command=lambda:do_asyncio_tasks(async_loop)).pack(anchor=tk.N, fill=tk.X)
-    tk.Button(master=root, text='Other Tasks', command=do_other_tasks).pack(anchor=tk.N, fill=tk.X)
+    root.title('asyncio-tkinter')
+    root.resizable(False, False)
+
+    body = tk.Frame(master=root)
+    body.pack(anchor=tk.CENTER, fill=tk.BOTH, padx=10, pady=10)
+
+    tk.Button(master=body, text='Asyncio Tasks', command=lambda:do_asyncio_tasks(async_loop)).pack(anchor=tk.N, fill=tk.X)
+    tk.Button(master=body, text='Other Tasks', command=do_other_tasks).pack(anchor=tk.N, fill=tk.X)
+
     root.mainloop()
 
 

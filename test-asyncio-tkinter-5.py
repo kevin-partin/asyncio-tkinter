@@ -6,16 +6,22 @@ This program demonstrates the mixing of asyncio and tkinter.
 
 import asyncio
 from collections.abc import Callable
-import random
+from datetime import datetime
 import sys
 import threading
 import time
+from typing import NamedTuple
 
 import tkinter as tk
-from tkinter import messagebox
+import tkinter.ttk as ttk
 
 
-event = threading.Event()
+class Events(NamedTuple):
+    trigger  = threading.Event()
+    shutdown = threading.Event()
+    stopped  = threading.Event()
+
+timestamp: datetime
 
 # -------------------------------------------------------------------------
 
@@ -111,7 +117,7 @@ class EventMonitor():
 
     def _monitor(self) -> None:
         '''
-        Monitor the event.
+        Monitor for an event occurance.
         '''
         while self.enabled:
             if self.event.wait(timeout=self.timeout):
@@ -120,93 +126,122 @@ class EventMonitor():
 
 # -------------------------------------------------------------------------
 
-async def asyncioTask(n: int):
-    '''
-    An Async I/O Task.
-    '''
-    sec = random.randint(1, 8)
-    await asyncio.sleep(sec)
-    return 'Task: {}\tsec: {}'.format(n, sec)
+class IOManager:
+
+
+    def __init__(self, *, events: Events) -> None:
+        '''
+        I/O Manager.
+        '''
+        self.events = events
+        asyncio.run(self.main())
+
+
+    async def main(self):
+        '''
+        I/O Manager Main Function.
+        '''
+        global timestamp
+
+        self.events.trigger.clear()
+
+        while not self.events.shutdown.is_set():
+
+            # Update the data.
+            timestamp = datetime.now()
+
+            # Set the trigger event to indicate the data has been updated.
+            self.events.trigger.set()
+            await asyncio.sleep(1)
+        
+        self.events.stopped.set()
 
 # -------------------------------------------------------------------------
 
-async def asyncioTasks():
-    '''
-    Create and start 10 Async I/O Tasks.
-    '''
-    event.clear()
-    tasks = [asyncio.create_task(asyncioTask(n)) for n in range(10)]
-    completed, pending = await asyncio.wait(tasks)
-    results = [task.result() for task in completed]
-    print('\n'.join(results))
-    event.set()
+class GUI:
 
-# -------------------------------------------------------------------------
 
-def asyncioMain():
-    '''
-    Starts the Ansyc I/O event loop.
-    '''
-    asyncio.run(asyncioTasks())
+    def __init__(self, *, events: Events) -> None:
+        '''
+        Graphical User Interface.
+        '''
 
-# -------------------------------------------------------------------------
+        self.events = events
 
-def guiTasks(n: int):
-    messagebox.showinfo(message=f'Performing Task {n}')
+        # Create an event monitor to refresh the GUI when the trigger event is set.
+        self.eventMonitor = EventMonitor(self.events.trigger, self.refresh)
+        self.eventMonitor.start()
 
-# -------------------------------------------------------------------------
+        # Create the GUI.
+        self.create()
 
-def guiMain(exitCallback: Callable):
 
-    def _exit(master: tk.Tk, exitCallback: Callable) -> None:
-        exitCallback()
-        master.destroy()
+    def exitButtonCallback(self) -> None:
+        '''
+        Callback for the Exit button.
+        '''
 
-    root = tk.Tk()
-    root.title('asyncio-tkinter')
-    root.resizable(False, False)
+        # Set the shutdown event.
+        self.events.shutdown.set()
 
-    body = tk.Frame(master=root)
-    body.pack(anchor=tk.CENTER, fill=tk.BOTH, padx=10, pady=10)
+        # Wait for the stopped event to be set.
+        self.events.stopped.wait()
 
-    tk.Button(master=body, text='Task 1', command=lambda: guiTasks(1)).pack(anchor=tk.N, fill=tk.X, pady=(0, 5))
-    tk.Button(master=body, text='Task 2', command=lambda: guiTasks(2)).pack(anchor=tk.N, fill=tk.X, pady=(0, 5))
-    tk.Button(master=body, text='Task 3', command=lambda: guiTasks(3)).pack(anchor=tk.N, fill=tk.X, pady=(0, 5))
+        # Stop the event monitor.
+        self.eventMonitor.stop()
 
-    tk.Button(master=body, text='Exit', command=lambda: _exit(root, exitCallback)).pack(anchor=tk.N, fill=tk.X, pady=(5, 0))
+        # Destroy the GUI.
+        self.root.destroy()
 
-    root.mainloop()
+
+    def create(self) -> None:
+        '''
+        Create the GUI.
+        '''
+
+        self.root = tk.Tk()
+        self.root.title('asyncio-tkinter')
+        self.root.resizable(False, False)
+
+        body = ttk.Frame(master=self.root)
+        body.pack(anchor=tk.CENTER, fill=tk.BOTH, padx=10, pady=10)
+
+        self.timestamp = tk.StringVar()
+        ttk.Label(master=body, text='Timestamp:').grid(row=0, column=0)
+        ttk.Entry(master=body, textvariable=self.timestamp, width=23).grid(row=0, column=1)
+
+        ttk.Button(master=body, text='Exit', command=self.exitButtonCallback).grid(row=1, column=0, columnspan=2, pady=(10, 0))
+
+
+    def start(self) -> None:
+        '''
+        Start the GUI.
+        '''
+        self.root.mainloop()
+
+
+    def refresh(self) -> None:
+        '''
+        Refresh the GUI.
+        '''
+        self.timestamp.set(timestamp.isoformat(timespec='milliseconds'))
+        self.root.update()
 
 # -------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
-    em = EventMonitor(
-        event    = event,
-        callback = lambda: messagebox.showinfo(message='Async I/O Tasks complete.'),
-    )
+    # Create the GUI.
+    gui = GUI(events=Events)
 
-    guit = threading.Thread(
-        target = guiMain,
-        name   = 'GUI',
-        args   = [em.stop,],
-    )
+    # Create a thread to manage all I/O.
+    threading.Thread(
+        target = IOManager,
+        name   = 'I/O Manager',
+        kwargs = {'events': Events},
+    ).start()
 
-    aiot = threading.Thread(
-        target = asyncioMain,
-        name   = 'Async I/O',
-    )
-
-    em.start()
-    guit.start()
-    aiot.start()
-
-    aiot.join()
-    print('Async I/O complete')
-
-    guit.join()
-    print('Done')
-
-    # em.stop()
+    # Start the GUI.
+    gui.start()
 
     sys.exit(0)
